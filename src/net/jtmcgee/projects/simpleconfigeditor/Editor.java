@@ -8,8 +8,11 @@ import java.util.Enumeration;
 import java.util.Properties;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -22,8 +25,8 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.RadioButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class Editor extends Activity {
@@ -33,6 +36,7 @@ public class Editor extends Activity {
 	private ArrayAdapter<String> mAdapter;
 	private String mPath;
 	private String APPTAG = "configEditor";
+	private boolean saved = true;
 	
 	private OnItemClickListener mOnItemClickListener = new OnItemClickListener() {
 		@Override
@@ -64,6 +68,7 @@ public class Editor extends Activity {
 						else
 							mConfigValues.setProperty(key, offValue);
 						settingsDialog.dismiss();
+						saved = false;
 					}
 				});
 				
@@ -87,6 +92,7 @@ public class Editor extends Activity {
 					public void onClick(View v) { // Ok, save value
 						mConfigValues.setProperty(key, field.getText().toString());
 						settingsDialog.dismiss();
+						saved = false;
 					}
 				});
 				
@@ -112,7 +118,10 @@ public class Editor extends Activity {
         Intent intent = getIntent();
         if(intent.getExtras() != null && intent.getExtras().containsKey("path")) {
         	mPath = intent.getExtras().getString("path");
-        	loadConfigValuesToList(intent.getExtras().getString("path"));
+        	loadConfigValuesToList(mPath);
+        } else if (intent.getData() != null) { // was loaded in astro or something
+        	mPath = intent.getData().getPath();
+        	loadConfigValuesToList(mPath);
         } else {
         	Log.e(APPTAG, "Editor -- Failed to load path variable.");
         	Toast.makeText(this, "Failed to load config file.", Toast.LENGTH_LONG).show();
@@ -123,6 +132,31 @@ public class Editor extends Activity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.activity_editor, menu);
         return true;
+    }
+    
+    @SuppressWarnings("deprecation")
+	@Override
+    public void onBackPressed() {
+    	if(!saved) {
+    		AlertDialog dialog = new AlertDialog.Builder(this).create();
+    		dialog.setTitle("Finish");
+    		dialog.setMessage("You have unsaved changes. Save them?");
+    		dialog.setButton("Save", new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					onSave();
+					finish();
+				}
+			});
+    		dialog.setButton2("Discard", new DialogInterface.OnClickListener() {
+				@Override
+				public void onClick(DialogInterface dialog, int which) {
+					finish();	
+				}
+			});
+    		dialog.show();
+    	} else 
+    		finish();
     }
     
     @Override
@@ -145,6 +179,7 @@ public class Editor extends Activity {
      */
     @SuppressWarnings("unchecked")
 	private void loadConfigValuesToList(String path) {
+		addFileToRecently(path);
         try {
         	mConfigValues = new Properties();
         	mConfigValues.load(new FileInputStream(path));
@@ -166,6 +201,7 @@ public class Editor extends Activity {
      * Saves the Properties out to the same location.
      */
     private void onSave() {
+    	saved = true;
     	try {
     		PrintStream fOut = new PrintStream(new FileOutputStream(mPath));
     		
@@ -180,5 +216,38 @@ public class Editor extends Activity {
     		Log.e(APPTAG, "Failed to save.", ioe);
     		Toast.makeText(this, "Failed to save settings.", Toast.LENGTH_LONG).show();
 		}
+    }
+    
+    private void addFileToRecently(String path) {
+    	/*    	StringTokenizer st = new StringTokenizer(getPref(RECENTLY_OPENED_KEY), ",");
+    	    	StringBuilder results = new StringBuilder();
+    	    	
+    	    	if(st.countTokens() == 5) {
+    	    		st.nextToken();
+    	    		
+    	    		while(st.hasMoreTokens()) {
+    	    			results.append("," + st.nextToken());
+    	    		}
+    	    		results.append("," + getPref(RECENTLY_OPENED_KEY));
+    	    		savePref(RECENTLY_OPENED_KEY, results.toString());
+    	    	} else {
+    	    		savePref(RECENTLY_OPENED_KEY, getPref(RECENTLY_OPENED_KEY) + "," + path);
+    	    	}*/
+    	   	
+    	    	
+    	    	SharedPreferences settings = getSharedPreferences(MainActivity.PREFERENCES_FILE, 0);
+    			SharedPreferences.Editor editor = settings.edit();
+    			
+    	    	if(path.equals(settings.getString(MainActivity.RECENTLY_OPENED_KEY + 3, "")) || path.equals(settings.getString(MainActivity.RECENTLY_OPENED_KEY + 2, "")) || 
+    	    			path.equals(settings.getString(MainActivity.RECENTLY_OPENED_KEY + 1, "")) || path.equals(settings.getString(MainActivity.RECENTLY_OPENED_KEY + 0, "")))
+    	    		return;
+
+    			
+    			editor.putString(MainActivity.RECENTLY_OPENED_KEY + "3", settings.getString(MainActivity.RECENTLY_OPENED_KEY + "2", ""));
+    			editor.putString(MainActivity.RECENTLY_OPENED_KEY + "2", settings.getString(MainActivity.RECENTLY_OPENED_KEY + "1", ""));
+    			editor.putString(MainActivity.RECENTLY_OPENED_KEY + "1", settings.getString(MainActivity.RECENTLY_OPENED_KEY + "0", ""));
+    			editor.putString(MainActivity.RECENTLY_OPENED_KEY + "0", path);
+
+    			editor.commit();
     }
 }

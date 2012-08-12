@@ -1,6 +1,7 @@
 package net.jtmcgee.projects.simpleconfigeditor;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -18,16 +19,16 @@ public class MainActivity extends Activity {
 	private Button fileBrowserButton;
 	private ListView recentlyList;
 	private ArrayAdapter<String> recentlyAdapter;
-	private final static String RECENTLY_OPENED_KEY = "recentlyOpened";
-	private final static String PREFERENCES_FILE = "mahPrefs";
 	private final int REQ_BROWSER = 1;	
+	public final static String RECENTLY_OPENED_KEY = "recentlyOpened";
+	public final static String PREFERENCES_FILE = "mahPrefs";
 	
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
-        fileBrowserButton = (Button) findViewById(R.id.openFileBrowser);
+        fileBrowserButton = (Button) findViewById(R.id.openFileBrowserButton);
         fileBrowserButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -49,10 +50,12 @@ public class MainActivity extends Activity {
         
         recentlyAdapter = new ArrayAdapter<String>(this, R.layout.simplerow);
     	SharedPreferences settings = getSharedPreferences(PREFERENCES_FILE, 0);
-        recentlyAdapter.add(settings.getString(RECENTLY_OPENED_KEY + "3", ""));
-        recentlyAdapter.add(settings.getString(RECENTLY_OPENED_KEY + "2", ""));
-        recentlyAdapter.add(settings.getString(RECENTLY_OPENED_KEY + "1", ""));
-        recentlyAdapter.add(settings.getString(RECENTLY_OPENED_KEY + "0", ""));
+    	for(int i = 0; i < 4; i++) {
+    		String tmp = settings.getString(RECENTLY_OPENED_KEY + i, "");
+    		if(!tmp.equals("")) {
+    			recentlyAdapter.add(tmp);
+    		}
+    	}
         recentlyList.setAdapter(recentlyAdapter);
     }
 
@@ -61,10 +64,12 @@ public class MainActivity extends Activity {
     	super.onResume();
         recentlyAdapter = new ArrayAdapter<String>(this, R.layout.simplerow);
     	SharedPreferences settings = getSharedPreferences(PREFERENCES_FILE, 0);
-        recentlyAdapter.add(settings.getString(RECENTLY_OPENED_KEY + "3", ""));
-        recentlyAdapter.add(settings.getString(RECENTLY_OPENED_KEY + "2", ""));
-        recentlyAdapter.add(settings.getString(RECENTLY_OPENED_KEY + "1", ""));
-        recentlyAdapter.add(settings.getString(RECENTLY_OPENED_KEY + "0", ""));
+    	for(int i = 0; i < 4; i++) {
+    		String tmp = settings.getString(RECENTLY_OPENED_KEY + i, "");
+    		if(!tmp.equals("")) {
+    			recentlyAdapter.add(tmp);
+    		}
+    	}
         recentlyList.setAdapter(recentlyAdapter);
     }
     
@@ -80,56 +85,10 @@ public class MainActivity extends Activity {
     		switch (requestCode) {
     			case REQ_BROWSER:
     				Intent intent = new Intent(this, Editor.class);
-    				addFileToRecently(data.getData().getPath());
-    				intent.putExtra("path", data.getData().getPath());
+    				intent.setData(data.getData());
     				startActivity(intent);
     				break;
     		}
     	}
-    }
-    
-    private void savePref(String key, String value) {
-		SharedPreferences settings = getSharedPreferences(PREFERENCES_FILE, 0);
-		SharedPreferences.Editor editor = settings.edit();
-		editor.putString(key, value);
-		editor.commit();
-    }
-    
-    private String getPref(String key) {
-    	SharedPreferences settings = getSharedPreferences(PREFERENCES_FILE, 0);
-    	return settings.getString(key, "");
-    }
-    
-    private void addFileToRecently(String path) {
-/*    	StringTokenizer st = new StringTokenizer(getPref(RECENTLY_OPENED_KEY), ",");
-    	StringBuilder results = new StringBuilder();
-    	
-    	if(st.countTokens() == 5) {
-    		st.nextToken();
-    		
-    		while(st.hasMoreTokens()) {
-    			results.append("," + st.nextToken());
-    		}
-    		results.append("," + getPref(RECENTLY_OPENED_KEY));
-    		savePref(RECENTLY_OPENED_KEY, results.toString());
-    	} else {
-    		savePref(RECENTLY_OPENED_KEY, getPref(RECENTLY_OPENED_KEY) + "," + path);
-    	}*/
-   	
-    	
-    	SharedPreferences settings = getSharedPreferences(PREFERENCES_FILE, 0);
-		SharedPreferences.Editor editor = settings.edit();
-		
-    	if(path.equals(settings.getString(RECENTLY_OPENED_KEY + 3, "")) || path.equals(settings.getString(RECENTLY_OPENED_KEY + 2, "")) || 
-    			path.equals(settings.getString(RECENTLY_OPENED_KEY + 1, "")) || path.equals(settings.getString(RECENTLY_OPENED_KEY + 0, "")))
-    		return;
-
-		
-		editor.putString(RECENTLY_OPENED_KEY + "3", settings.getString(RECENTLY_OPENED_KEY + "2", ""));
-		editor.putString(RECENTLY_OPENED_KEY + "2", settings.getString(RECENTLY_OPENED_KEY + "1", ""));
-		editor.putString(RECENTLY_OPENED_KEY + "1", settings.getString(RECENTLY_OPENED_KEY + "0", ""));
-		editor.putString(RECENTLY_OPENED_KEY + "0", path);
-
-		editor.commit();
     }
 }

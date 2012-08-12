@@ -6,7 +6,7 @@
     <string name="open_file_browser">Open File Browser</string>
     <string name="recently_opened_files">Recently Opened Files</string>
     <string name="hello_world">Hello world!</string>
-    <string name="title_activity_editor">Editor</string>
+    <string name="title_activity_editor">Config Editor</string>
 	<string name="on">On</string>
 	<string name="off">Off</string>
 	<string name="ok">OK</string>
